@@ -2,14 +2,19 @@ import { freedBytes, useGduModel } from '../model';
 import { formatSize } from '../format';
 import { Breadcrumbs } from './Breadcrumbs';
 import { PROJECTIONS, type Projection } from '../cleanup';
+import { ScanControls } from './ScanControls';
+import { SnapshotControls } from './SnapshotControls';
 
 export function Header() {
   const {
     status,
+    actionToken,
+    currentPath,
     nodeResp,
     total,
     useSIPrefix,
     view,
+    openOverview,
     toggleView,
     projection,
     setProjection,
@@ -28,7 +33,14 @@ export function Header() {
         {nodeResp && <Breadcrumbs breadcrumbs={nodeResp.breadcrumbs} onNavigate={handleSelect} />}
       </div>
       <div className="app-actions">
-        <span className="total">{formatSize(total, useSIPrefix)}</span>
+        {status.snapshotAllowed && <SnapshotControls token={actionToken} scanState={status.state} />}
+        {status.scanAllowed && <ScanControls status={status} token={actionToken} currentPath={currentPath} />}
+        {view !== 'overview' && (
+          <>
+            <span className="total">{formatSize(total, useSIPrefix)}</span>
+            <button type="button" className="toggle" onClick={openOverview}>空间总览</button>
+          </>
+        )}
         <button
           type="button"
           className="toggle"

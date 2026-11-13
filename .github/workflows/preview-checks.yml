@@ -1,0 +1,50 @@
+name: Chinese preview checks
+
+on:
+  push:
+    branches: [zh-cn]
+  pull_request:
+    branches: [zh-cn]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: webui/frontend/package-lock.json
+      - run: npm --prefix webui/frontend ci
+      - run: npm --prefix webui/frontend test
+      - run: npm --prefix webui/frontend run build
+      - name: Check embedded assets
+        run: git diff --exit-code -- webui/dist
+
+  backend:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: 1.26.x
+      - name: Build
+        run: go build ./...
+      - name: Linux tests
+        if: runner.os == 'Linux'
+        run: go test ./...
+      - name: Windows preview tests
+        if: runner.os == 'Windows'
+        # Upstream Windows baseline failures are documented in docs/WINDOWS-PREVIEW.md.
+        run: go test ./webui ./report ./pkg/remove -skip '^(TestReadAnalysis|TestAnalyzePathWithSummarizeFromSqliteStorage|TestAnalyzePathWithDepthFromSqliteStorage)$' -count=1

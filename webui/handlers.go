@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -18,11 +19,21 @@ type statusResponse struct {
 	State            string       `json:"state"` // "scanning" | "done" | "error"
 	Error            string       `json:"error,omitempty"`
 	RootPath         string       `json:"rootPath"`
+	TreeRevision     uint64       `json:"treeRevision"`
+	ScanRevision     uint64       `json:"scanRevision"`
+	ScanTarget       string       `json:"scanTarget,omitempty"`
+	ScanAllowed      bool         `json:"scanAllowed"`
+	ScanCancelling   bool         `json:"scanCancelling,omitempty"`
+	ScanTime         time.Time    `json:"scanTime,omitzero"`
+	RestoredSnapshot bool         `json:"restoredSnapshot,omitempty"`
+	SnapshotAllowed  bool         `json:"snapshotAllowed"`
+	SnapshotBusy     string       `json:"snapshotBusy,omitempty"`
 	Progress         progressJSON `json:"progress"`
 	ShowApparentSize bool         `json:"showApparentSize"`
 	ShowRelativeSize bool         `json:"showRelativeSize"`
 	UseSIPrefix      bool         `json:"useSIPrefix"`
 	DeleteAllowed    bool         `json:"deleteAllowed"`
+	RecycleAllowed   bool         `json:"recycleAllowed"`
 	// Classifying is set while cleanup candidates are being classified, which
 	// starts once a scan is done.
 	Classifying bool `json:"classifying"`
@@ -70,8 +81,15 @@ func (ui *UI) buildStatus() statusResponse {
 	}
 
 	resp := statusResponse{
-		State:    state,
-		RootPath: ui.topDirPath,
+		State:            state,
+		RootPath:         ui.topDirPath,
+		TreeRevision:     ui.overviewRevision.Load(),
+		ScanRevision:     ui.scanRevision,
+		ScanAllowed:      ui.recycleOnly && windowsRecycleSupported && isLoopbackHost(ui.listenAddr),
+		ScanTime:         ui.scanTime,
+		RestoredSnapshot: ui.restoredSnapshot,
+		SnapshotAllowed:  ui.snapshotEnabled(),
+		SnapshotBusy:     ui.snapshotJob.Busy,
 		Progress: progressJSON{
 			CurrentItem: ui.progress.CurrentItemName,
 			ItemCount:   ui.progress.ItemCount,
@@ -82,8 +100,15 @@ func (ui *UI) buildStatus() statusResponse {
 		UseSIPrefix:      ui.UseSIPrefix,
 		Classifying:      ui.classifying.Load(),
 	}
+	if ui.scanning {
+		resp.ScanTarget = ui.scanTarget
+		resp.ScanCancelling = ui.scanCancelled
+	}
 	reason, _ := ui.deleteDisabledReason(ui.noDelete, ui.scanning)
-	resp.DeleteAllowed = reason == ""
+	resp.DeleteAllowed = reason == "" && !ui.recycleOnly
+	snapshotFilterAllowsCleanup := !ui.snapshotFiltered || os.Getenv("GDU_ALLOW_DELETE_WITH_FILTER") == "1"
+	resp.RecycleAllowed = reason == "" && ui.recycleOnly && !ui.scanning && ui.scanErr == nil && ui.topDir != nil &&
+		windowsRecycleSupported && resp.SnapshotBusy == "" && snapshotFilterAllowsCleanup
 	if ui.scanErr != nil {
 		resp.Error = ui.scanErr.Error()
 	}
@@ -94,6 +119,9 @@ func (ui *UI) handleStatus(w http.ResponseWriter, r *http.Request) {
 	resp := ui.buildStatus()
 	if !isLocalRequest(r) {
 		resp.DeleteAllowed = false
+		resp.RecycleAllowed = false
+		resp.ScanAllowed = false
+		resp.SnapshotAllowed = false
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -148,6 +176,11 @@ func (ui *UI) deleteDisabledReason(noDelete, scanning bool) (reason string, stat
 func (ui *UI) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 	ui.actionMu.Lock()
 	defer ui.actionMu.Unlock()
+
+	if ui.recycleOnly {
+		writeError(w, http.StatusForbidden, "请在空间总览中确认待清理清单")
+		return
+	}
 
 	ui.mu.RLock()
 	noDelete := ui.noDelete
@@ -310,6 +343,9 @@ func statusJSONForClient(msg string, local bool) string {
 		return msg
 	}
 	resp.DeleteAllowed = false
+	resp.RecycleAllowed = false
+	resp.ScanAllowed = false
+	resp.SnapshotAllowed = false
 	data, err := json.Marshal(resp)
 	if err != nil {
 		return msg

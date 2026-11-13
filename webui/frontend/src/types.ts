@@ -66,11 +66,21 @@ export interface Status {
   state: ScanState;
   error?: string;
   rootPath: string;
+  treeRevision?: number;
+  scanRevision?: number;
+  scanAllowed?: boolean;
+  scanTarget?: string;
+  scanCancelling?: boolean;
+  scanTime?: string;
+  restoredSnapshot?: boolean;
+  snapshotAllowed?: boolean;
+  snapshotBusy?: 'save' | 'restore';
   progress: Progress;
   showApparentSize: boolean;
   showRelativeSize: boolean;
   useSIPrefix: boolean;
   deleteAllowed: boolean;
+  recycleAllowed?: boolean;
   // Set while cleanup candidates are being classified, after a scan or a
   // change of the tree. Cleanup data is missing from responses meanwhile.
   classifying: boolean;

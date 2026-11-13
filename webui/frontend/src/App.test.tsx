@@ -92,7 +92,7 @@ afterEach(() => {
 
 describe('chart view', () => {
   it('keeps the donut table and switches to a full treemap with an inverse label', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     const toggle = await screen.findByRole('button', { name: '矩形树图' });
     expect(screen.getByRole('table')).toBeTruthy();
@@ -115,12 +115,12 @@ describe('chart view', () => {
 describe('action token', () => {
   it('keeps the token across reloads', async () => {
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
-    const firstRender = render(<App />);
+    const firstRender = render(<App initialView="donut" />);
     await screen.findByRole('table');
 
     firstRender.unmount();
 
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyO' });
@@ -136,7 +136,7 @@ describe('missing action token', () => {
     // No token in storage: index.html found none in the URL, or storage is
     // unavailable. Every action would come back as a bare 403.
     window.sessionStorage.clear();
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -151,7 +151,7 @@ describe('treemap actions', () => {
   it('reveals and deletes only the selected item, with session-only confirmation', async () => {
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    const firstRender = render(<App />);
+    const firstRender = render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const file = await screen.findByRole('button', { name: /file\.txt/ });
@@ -191,7 +191,7 @@ describe('treemap actions', () => {
     expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
 
     firstRender.unmount();
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
@@ -201,7 +201,7 @@ describe('treemap actions', () => {
   });
 
   it('moves focus between the delete modal buttons with the arrow keys', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -226,7 +226,7 @@ describe('treemap actions', () => {
   });
 
   it('opens the delete confirmation via the Delete key, same as the D shortcut', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -236,7 +236,7 @@ describe('treemap actions', () => {
   });
 
   it('does not delete on Backspace, which file managers bind to "go up"', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -247,7 +247,7 @@ describe('treemap actions', () => {
 
   it('remembers the skip-confirmation choice across a reload', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    const first = render(<App />);
+    const first = render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
@@ -258,7 +258,7 @@ describe('treemap actions', () => {
     first.unmount();
 
     // The reload must not silently start re-prompting.
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
@@ -269,7 +269,7 @@ describe('treemap actions', () => {
 
   it('moves the item to the trash without affecting the permanent-delete skip choice', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -282,7 +282,7 @@ describe('treemap actions', () => {
   });
 
   it('opens shortcut help with question mark, without treemap-only shortcuts in donut view', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
     await screen.findByRole('button', { name: '矩形树图' });
 
     fireEvent.keyDown(window, { key: '?' });
@@ -294,7 +294,7 @@ describe('treemap actions', () => {
   });
 
   it('includes the treemap-only shortcuts in help when viewing the treemap', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await screen.findByRole('img', { name: '目录占用矩形树图' });
 
@@ -305,7 +305,7 @@ describe('treemap actions', () => {
   });
 
   it('opens a directory only on double-click', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const folder = await screen.findByRole('button', { name: /folder/ });
 
@@ -323,7 +323,7 @@ describe('treemap actions', () => {
   });
 
   it('opens the parent directory when double-clicking a nested file', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const nested = await screen.findByRole('button', { name: /nested\.bin/ });
 
@@ -337,7 +337,7 @@ describe('treemap actions', () => {
   it('does not offer deletion when the backend disables it', async () => {
     vi.mocked(api.fetchStatus).mockResolvedValue({ ...status, deleteAllowed: false });
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
 
@@ -351,7 +351,7 @@ describe('treemap actions', () => {
 
   it('keeps the layout after a deletion and reloads on navigation', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await screen.findByRole('img', { name: '目录占用矩形树图' });
@@ -377,7 +377,7 @@ describe('treemap actions', () => {
     vi.mocked(api.deleteNode).mockRejectedValue(
       Object.assign(new Error('node not found'), { status: 404 }),
     );
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
@@ -393,7 +393,7 @@ describe('treemap actions', () => {
 describe('table actions', () => {
   it('reveals a row without navigating into it', async () => {
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 folder' }));
 
@@ -405,7 +405,7 @@ describe('table actions', () => {
   });
 
   it('still navigates into a directory when the row itself is clicked', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByText('folder', { exact: false, selector: '.name' }));
 
@@ -416,7 +416,7 @@ describe('table actions', () => {
 
   it('confirms before deleting and moves the row to the trash', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
     expect(screen.getByRole('dialog', { name: '删除项目' })).toBeTruthy();
@@ -436,7 +436,7 @@ describe('table actions', () => {
 
   it('deletes permanently from the dialog', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '删除 folder' }));
     fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
@@ -448,7 +448,7 @@ describe('table actions', () => {
   });
 
   it('does not delete when the dialog is cancelled', async () => {
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
@@ -459,7 +459,7 @@ describe('table actions', () => {
 
   it('shares the do-not-ask-again choice with the treemap', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
     fireEvent.click(screen.getByRole('checkbox', { name: '本次会话不再确认' }));
@@ -475,7 +475,7 @@ describe('table actions', () => {
 
   it('shows a deletion made in the table on the cached treemap', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await screen.findByRole('img', { name: '目录占用矩形树图' });
@@ -497,7 +497,7 @@ describe('table actions', () => {
 
   it('shows the error when the delete fails', async () => {
     vi.mocked(api.deleteNode).mockRejectedValue(new Error('deletion is disabled'));
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
     fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
@@ -508,7 +508,7 @@ describe('table actions', () => {
   it('hides delete but keeps reveal when the backend disables deletion', async () => {
     vi.mocked(api.fetchStatus).mockResolvedValue({ ...status, deleteAllowed: false });
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 file.txt' }));
 
@@ -521,7 +521,7 @@ describe('table actions', () => {
 
   it('explains that actions are unavailable without an action token', async () => {
     window.sessionStorage.clear();
-    render(<App />);
+    render(<App initialView="donut" />);
 
     fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 file.txt' }));
 
@@ -570,7 +570,7 @@ describe('projections', () => {
   });
 
   async function openTreemap() {
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await screen.findByRole('img', { name: '目录占用矩形树图' });
   }
@@ -724,7 +724,7 @@ describe('optimistic deletion', () => {
   });
 
   async function openTreemap() {
-    render(<App />);
+    render(<App initialView="donut" />);
     fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await screen.findByRole('img', { name: '目录占用矩形树图' });
   }

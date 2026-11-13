@@ -1,10 +1,10 @@
 package report
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,82 +13,89 @@ import (
 
 // ReadAnalysis reads analysis report from JSON file and returns directory item
 func ReadAnalysis(input io.Reader) (dir *analyze.Dir, err error) {
-	var data any
-
-	var buff bytes.Buffer
-	if _, err = buff.ReadFrom(input); err != nil {
+	decoder := json.NewDecoder(input)
+	token, err := decoder.Token()
+	if err == io.EOF {
+		return nil, errors.New("unexpected end of JSON input")
+	}
+	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(buff.Bytes(), &data); err != nil {
-		return nil, err
-	}
-
-	dataArray, ok := data.([]any)
-	if !ok {
+	if token != json.Delim('[') {
 		return nil, errors.New("JSON file does not contain top level array")
 	}
-	if len(dataArray) < 4 {
+	for range 3 {
+		if !decoder.More() {
+			return nil, errors.New("top level array must have at least 4 items")
+		}
+		var header json.RawMessage
+		if err := decoder.Decode(&header); err != nil {
+			return nil, err
+		}
+	}
+	if !decoder.More() {
 		return nil, errors.New("top level array must have at least 4 items")
 	}
-
-	items, ok := dataArray[3].([]any)
-	if !ok {
+	token, err = decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+	if token != json.Delim('[') {
 		return nil, errors.New("array of maps not found in the top level array on 4th position")
 	}
-
-	return processDir(items)
+	dir, err = processDir(decoder)
+	if err != nil {
+		return nil, err
+	}
+	for decoder.More() {
+		var extra json.RawMessage
+		if err := decoder.Decode(&extra); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, err
+	}
+	// Reach EOF so invalid trailing input and compressed-stream checksum
+	// failures are detected before publishing the tree.
+	if _, err := decoder.Token(); err != io.EOF {
+		if err == nil {
+			err = errors.New("unexpected data after analysis")
+		}
+		return nil, err
+	}
+	return dir, nil
 }
 
-func processDir(items []any) (dir *analyze.Dir, err error) {
-	if len(items) == 0 {
+// The opening array delimiter has already been consumed. Decode each item
+// into the tree as it arrives instead of holding another tree of JSON maps.
+func processDir(decoder *json.Decoder) (*analyze.Dir, error) {
+	if !decoder.More() {
 		return nil, errors.New("directory array is empty")
 	}
-
-	var hasSize, hasUsage, hasItemCount bool
-	dir, hasSize, hasUsage, hasItemCount, err = parseDirectoryMetadata(items[0])
+	var metadata any
+	if err := decoder.Decode(&metadata); err != nil {
+		return nil, err
+	}
+	dir, hasSize, hasUsage, hasItemCount, err := parseDirectoryMetadata(metadata)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, v := range items[1:] {
-		switch item := v.(type) {
-		case map[string]any:
-			file := &analyze.File{}
-			name, ok := item["name"].(string)
-			if !ok {
-				return nil, errors.New("file name is not a string")
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		switch token {
+		case json.Delim('{'):
+			file, err := processFile(decoder, dir)
+			if err != nil {
+				return nil, err
 			}
-			file.Name = name
-
-			if asize, ok := item["asize"].(float64); ok {
-				file.Size = int64(asize)
-			}
-			if dsize, ok := item["dsize"].(float64); ok {
-				file.Usage = int64(dsize)
-			}
-			if shsize, ok := item["shsize"].(float64); ok {
-				file.SharedUsage = int64(shsize)
-			}
-			if mtime, ok := item["mtime"].(float64); ok {
-				file.Mtime = time.Unix(int64(mtime), 0)
-			}
-			if _, ok := item["notreg"].(bool); ok {
-				file.Flag = '@'
-			} else {
-				file.Flag = ' '
-			}
-			if mli, ok := item["ino"].(float64); ok {
-				file.Mli = uint64(mli)
-			}
-			if _, ok := item["hlnkc"].(bool); ok {
-				file.Flag = 'H'
-			}
-
-			file.Parent = dir
-
 			dir.AddFile(file)
-		case []any:
-			subdir, err := processDir(item)
+		case json.Delim('['):
+			subdir, err := processDir(decoder)
 			if err != nil {
 				return nil, err
 			}
@@ -96,12 +103,65 @@ func processDir(items []any) (dir *analyze.Dir, err error) {
 			dir.AddFile(subdir)
 		}
 	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, err
+	}
 	if hasUsage {
 		dir.OwnUsage = exportedOwnUsage(dir)
 	}
 	preserveTruncatedStats(dir, hasSize, hasUsage, hasItemCount)
 
 	return dir, nil
+}
+
+func processFile(decoder *json.Decoder, parent *analyze.Dir) (*analyze.File, error) {
+	file := &analyze.File{Parent: parent, Flag: ' '}
+	var hasName, notRegular, hardLinked bool
+	for decoder.More() {
+		key, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		var value any
+		if err := decoder.Decode(&value); err != nil {
+			return nil, err
+		}
+		number, _ := value.(float64)
+		switch key {
+		case "name":
+			file.Name, hasName = value.(string)
+		case "asize":
+			file.Size = int64(number)
+		case "dsize":
+			file.Usage = int64(number)
+		case "shsize":
+			file.SharedUsage = int64(number)
+		case "mtime":
+			file.Mtime = time.Time{}
+			if _, ok := value.(float64); ok {
+				file.Mtime = time.Unix(int64(number), 0)
+			}
+		case "notreg":
+			_, notRegular = value.(bool)
+		case "ino":
+			file.Mli = uint64(number)
+		case "hlnkc":
+			_, hardLinked = value.(bool)
+		}
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, err
+	}
+	if !hasName {
+		return nil, errors.New("file name is not a string")
+	}
+	if notRegular {
+		file.Flag = '@'
+	}
+	if hardLinked {
+		file.Flag = 'H'
+	}
+	return file, nil
 }
 
 // exportedOwnUsage recovers the disk usage of the directory itself, which the
@@ -152,7 +212,10 @@ func parseDirectoryMetadata(item any) (
 		hasItemCount = true
 	}
 
-	slashPos := strings.LastIndex(name, "/")
+	slashPos := strings.LastIndexByte(name, '/')
+	if filepath.Separator != '/' {
+		slashPos = max(slashPos, strings.LastIndexByte(name, filepath.Separator))
+	}
 	if slashPos > -1 {
 		dir.Name = name[slashPos+1:]
 		dir.BasePath = name[:slashPos+1]

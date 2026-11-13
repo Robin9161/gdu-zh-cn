@@ -7,3 +7,14 @@
 /test_dir
 /tui/test_dir
 /vendor
+
+# Local preview data and generated test output; never publish disk inventories.
+/state/
+latest-scan.json.gz
+.scan-*.tmp
+*.exe
+*.log
+.env
+.env.local
+/report/output.json
+/docs/local-preview-status.md

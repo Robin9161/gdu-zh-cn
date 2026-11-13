@@ -1,0 +1,9 @@
+.snapshot-dialog { width: min(440px, calc(100% - 28px)); color: var(--text); }
+.snapshot-dialog:not([open]) { display: none; }
+.snapshot-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+.snapshot-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+.snapshot-details dt, .snapshot-note { color: #abb6c7; font-size: 12px; }
+.snapshot-details dd { margin: 0; overflow-wrap: anywhere; }
+.snapshot-dialog .modal-actions { flex-wrap: wrap; }
+.snapshot-dialog button:disabled { opacity: 0.55; cursor: default; }
+.snapshot-error { color: #ffb3b8; }

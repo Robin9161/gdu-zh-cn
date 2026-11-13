@@ -152,6 +152,7 @@ func (ui *UI) stopClassifyingLocked() {
 // treeChanged invalidates everything derived from the tree and classifies it
 // again.
 func (ui *UI) treeChanged() {
+	ui.overviewRevision.Add(1)
 	ui.treeGen.Add(1)
 	ui.classify()
 }
@@ -159,11 +160,15 @@ func (ui *UI) treeChanged() {
 // removeNode runs removeFunc and updates the classification for the removal.
 // It reports whether the item is gone from the tree.
 func (ui *UI) removeNode(removeFunc func(fs.Item, fs.Item) error, parent, node fs.Item) (bool, error) {
+	revision := ui.overviewRevision.Load()
 	ui.removalSeq.Add(1)
 	defer func() {
 		ui.removalSeq.Add(1)
 		// a classification the deletion interrupted starts again
 		ui.classify()
+		if revision != ui.overviewRevision.Load() {
+			ui.hub.publish(ui.statusJSON())
+		}
 	}()
 
 	if err := removeFunc(parent, node); err != nil {
@@ -176,6 +181,7 @@ func (ui *UI) removeNode(removeFunc func(fs.Item, fs.Item) error, parent, node f
 		return false, nil
 	}
 	ui.itemRemoved(node)
+	ui.overviewRevision.Add(1)
 	return true, nil
 }
 

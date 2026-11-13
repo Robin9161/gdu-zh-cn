@@ -14,7 +14,7 @@ import { colorMapFor, computeSlices } from './slices';
 import { useLatest } from './useLatest';
 import { amountValue, type Projection } from './cleanup';
 
-export type ChartView = 'donut' | 'treemap';
+export type ChartView = 'overview' | 'donut' | 'treemap';
 
 const actionTokenStorageKey = 'gdu.actionToken';
 const deleteModeStorageKey = 'gdu.skipDeleteConfirm';
@@ -64,6 +64,7 @@ export interface GduModel {
   order: SortOrder;
   onSortChange: (key: SortKey) => void;
   view: ChartView;
+  openOverview: () => void;
   toggleView: () => void;
   // projection is how the treemap is colored (and, for "categories", shaped).
   // Kept here so it survives toggling the view.
@@ -173,7 +174,7 @@ export function GduModelProvider({ model, children }: { model: GduModel; childre
 // fetching) and returns the raw hook result. App calls it directly so it can
 // still render the pre-scan loading/error/progress screens before a
 // GduModelProvider (which needs a non-null status/currentPath) makes sense.
-export function useGduModelState() {
+export function useGduModelState(initialView: ChartView = 'overview') {
   // index.html strips a fresh token from the URL before loading the application
   // bundle and retains it in tab-scoped storage so reloads keep actions working.
   const [actionToken] = useState(() => readSessionStorage(actionTokenStorageKey) ?? '');
@@ -183,7 +184,7 @@ export function useGduModelState() {
   const [sort, setSort] = useState<SortKey>('size');
   const [order, setOrder] = useState<SortOrder>('desc');
   const [apparent, setApparent] = useState<boolean | null>(null);
-  const [view, setView] = useState<ChartView>('donut');
+  const [view, setView] = useState<ChartView>(initialView);
   const [projection, setProjection] = useState<Projection>('location');
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -223,16 +224,30 @@ export function useGduModelState() {
     }
   }, [status, apparent]);
 
-  // Once a scan is done, default into the root directory.
+  // A new scan replaces the tree, including when the root path is unchanged.
+  const scanRevision = status?.scanRevision;
+  const scanRoot = status?.rootPath;
+  const observedScan = useRef<{ revision?: number; root: string } | null>(null);
   useEffect(() => {
-    if (status?.state === 'done' && currentPath === null && status.rootPath) {
-      setCurrentPath(status.rootPath);
-    }
-  }, [status, currentPath]);
+    if (status?.state !== 'done' || !scanRoot) return;
+    const previous = observedScan.current;
+    if (previous?.revision === scanRevision && previous?.root === scanRoot) return;
+    observedScan.current = { revision: scanRevision, root: scanRoot };
+    setCurrentPath(scanRoot);
+    setNodeResp(null);
+    setLoadError(null);
+    setTreeRoot(null);
+    setTreePath(null);
+    setHoveredPath(null);
+    setDeletions(new Map());
+    staleRef.current = false;
+    setReloadKey((key) => key + 1);
+    if (previous) setView('overview');
+  }, [status?.state, scanRevision, scanRoot]);
 
   // Load the current node whenever the path, sort, or scan completion changes.
   useEffect(() => {
-    if (currentPath === null) {
+    if (currentPath === null || status?.state !== 'done') {
       return;
     }
     let cancelled = false;
@@ -374,6 +389,11 @@ export function useGduModelState() {
     setHoveredPath(null);
   }, []);
 
+  const openOverview = useCallback(() => {
+    setView('overview');
+    setHoveredPath(null);
+  }, []);
+
   const toggleApparent = useCallback(() => {
     setApparent((a) => !(a ?? status?.showApparentSize ?? false));
   }, [status?.showApparentSize]);
@@ -415,6 +435,7 @@ export function useGduModelState() {
     order,
     onSortChange,
     view,
+    openOverview,
     toggleView,
     projection,
     setProjection,

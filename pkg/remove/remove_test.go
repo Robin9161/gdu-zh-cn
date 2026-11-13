@@ -1,6 +1,7 @@
 package remove
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,5 +127,5 @@ func TestTruncateFileWithErr(t *testing.T) {
 
 	err := EmptyFileFromDir(subdir, file)
 
-	assert.Contains(t, err.Error(), "no such file or directory")
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }

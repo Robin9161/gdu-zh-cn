@@ -5,6 +5,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -40,20 +41,36 @@ type UI struct {
 	getter  device.DevicesInfoGetter
 	devices device.Devices
 
-	mu           sync.RWMutex
-	actionMu     sync.Mutex
-	topDir       fs.Item
-	topDirPath   string
-	linkedItems  fs.HardLinkedItems
-	collapsePath bool
-	scanning     bool
-	scanErr      error
-	progress     common.CurrentProgress
-	noDelete     bool
-	trasher      func(fs.Item, fs.Item) error
+	mu               sync.RWMutex
+	actionMu         sync.Mutex
+	topDir           fs.Item
+	topDirPath       string
+	linkedItems      fs.HardLinkedItems
+	collapsePath     bool
+	scanning         bool
+	scanTarget       string
+	scanRevision     uint64
+	scanTime         time.Time
+	restoredSnapshot bool
+	snapshotFiltered bool
+	scanCancelled    bool
+	scanErr          error
+	progress         common.CurrentProgress
+	noDelete         bool
+	recycleOnly      bool
+	trasher          func(fs.Item, fs.Item) error
+	recyclePlan      *recyclePlan
+	recycleToBin     func(string) error
+	archiveBrowsing  bool
+	snapshotPath     string
+	snapshotJob      snapshotJob
 
 	classifier *cleanup.Classifier
 	cleanup    cleanupCache
+	overview   overviewCache
+	// Successful removals update the cleanup cache in place.
+	// The independent file inventory still needs to be invalidated.
+	overviewRevision atomic.Uint64
 	// treeGen counts changes to the tree that keep its root, such as a
 	// deletion or a rescan of a subdirectory.
 	treeGen atomic.Uint64
@@ -71,6 +88,15 @@ func (ui *UI) SetNoDelete() {
 	ui.mu.Lock()
 	ui.noDelete = true
 	ui.mu.Unlock()
+}
+
+func (ui *UI) SetRecycleOnly(enabled bool) {
+	ui.recycleOnly = enabled
+}
+
+func (ui *UI) SetArchiveBrowsing(enabled bool) {
+	ui.archiveBrowsing = enabled
+	ui.UI.SetArchiveBrowsing(enabled)
 }
 
 // SetTrashCommand replaces the built-in trash with an external command, as
@@ -98,15 +124,16 @@ func CreateUI(
 			UseSIPrefix:      useSIPrefix,
 			Analyzer:         analyze.CreateAnalyzer(),
 		},
-		output:      output,
-		listenAddr:  listenAddr,
-		openBrowser: openBrowser,
-		browserCmd:  browserCmd,
-		revealPath:  revealInFileManager,
-		trasher:     remove.MoveItemToTrash,
-		actionToken: generateActionToken(),
-		linkedItems: make(fs.HardLinkedItems),
-		hub:         newHub(),
+		output:       output,
+		listenAddr:   listenAddr,
+		openBrowser:  openBrowser,
+		browserCmd:   browserCmd,
+		revealPath:   revealInFileManager,
+		trasher:      remove.MoveItemToTrash,
+		recycleToBin: recycleFile,
+		actionToken:  generateActionToken(),
+		linkedItems:  make(fs.HardLinkedItems),
+		hub:          newHub(),
 	}
 	ui.classifier = cleanup.NewDefaultClassifier(userHomeDir())
 	if listenAddr == "" {
@@ -143,42 +170,76 @@ func (ui *UI) ListDevices(getter device.DevicesInfoGetter) error {
 // AnalyzePath analyzes disk usage in the given path in the background while the
 // HTTP server serves progress and partial results.
 func (ui *UI) AnalyzePath(path string, parentDir fs.Item) error {
+	return ui.analyzePath(path, parentDir, true)
+}
+
+func (ui *UI) analyzePath(path string, parentDir fs.Item, allowStartupRestore bool) error {
 	ui.mu.Lock()
+	if ui.scanning {
+		ui.mu.Unlock()
+		return errScanRunning
+	}
+	autoRestore := allowStartupRestore && parentDir == nil && ui.topDir == nil &&
+		ui.scanRevision == 0 && ui.snapshotEnabled() && startupRestoreEnabled()
+	ui.Analyzer.ResetProgress()
 	ui.scanning = true
+	ui.scanTarget = path
+	ui.scanCancelled = false
 	ui.scanErr = nil
-	ui.topDirPath = path
+	ui.progress = common.CurrentProgress{}
 	ui.mu.Unlock()
 
-	ui.Analyzer.ResetProgress()
-
-	scanDone := make(chan struct{})
-	go ui.pollProgress(scanDone)
+	ui.hub.publish(ui.statusJSON())
 
 	go func() {
-		dir := ui.Analyzer.AnalyzeDir(path, ui.CreateIgnoreFunc(), ui.CreateFileTypeFilter())
-
-		if parentDir != nil {
-			dir.SetParent(parentDir)
-			parentDir.RemoveFileByName(dir.GetName())
-			parentDir.AddFile(dir)
+		if autoRestore && ui.tryStartupSnapshot(path) {
+			return
 		}
+		scanDone := make(chan struct{})
+		progressDone := make(chan struct{})
+		go func() {
+			defer close(progressDone)
+			ui.pollProgress(scanDone)
+		}()
+		dir := ui.Analyzer.AnalyzeDir(path, ui.CreateIgnoreFunc(), ui.CreateFileTypeFilter())
+		close(scanDone)
+		<-progressDone
 
+		linkedItems := make(fs.HardLinkedItems)
 		if ui.IsFilteringFiles() {
-			dir.UpdateStatsWithFileFiltering(ui.linkedItems)
+			dir.UpdateStatsWithFileFiltering(linkedItems)
 		} else {
-			dir.UpdateStats(ui.linkedItems)
+			dir.UpdateStats(linkedItems)
 		}
 
 		ui.mu.Lock()
-		if parentDir == nil {
+		switch {
+		case ui.scanCancelled:
+			if ui.topDir == nil {
+				ui.scanErr = errors.New("扫描已取消")
+			}
+		case parentDir != nil:
+			dir.SetParent(parentDir)
+			parentDir.RemoveFileByName(dir.GetName())
+			parentDir.AddFile(dir)
+			ui.scanTime = time.Time{}
+		default:
 			ui.topDir = dir
 			ui.topDirPath = dir.GetPath()
+			ui.scanRevision++
+			ui.scanTime = time.Now().UTC()
+			ui.restoredSnapshot = false
+			ui.snapshotFiltered = false
 		}
+		cancelled := ui.scanCancelled
 		ui.scanning = false
 		ui.mu.Unlock()
-		ui.treeChanged()
+		if cancelled {
+			ui.classify()
+		} else {
+			ui.treeChanged()
+		}
 
-		close(scanDone)
 		ui.hub.publish(ui.statusJSON())
 	}()
 
@@ -225,6 +286,9 @@ func (ui *UI) AnalyzePaths(paths []string) error {
 		ui.topDir = dir
 		ui.topDirPath = dir.GetPath()
 		ui.scanning = false
+		ui.scanTime = time.Now().UTC()
+		ui.restoredSnapshot = false
+		ui.snapshotFiltered = false
 		ui.mu.Unlock()
 		ui.treeChanged()
 
@@ -254,6 +318,9 @@ func (ui *UI) ReadAnalysis(input io.Reader) error {
 	ui.topDir = dir
 	ui.topDirPath = dir.GetPath()
 	ui.scanning = false
+	ui.scanTime = time.Time{}
+	ui.restoredSnapshot = false
+	ui.snapshotFiltered = false
 	ui.mu.Unlock()
 	ui.treeChanged()
 	return nil
@@ -275,6 +342,9 @@ func (ui *UI) ReadFromStorage(storagePath, path string) error {
 	ui.topDir = dir
 	ui.topDirPath = dir.GetPath()
 	ui.scanning = false
+	ui.scanTime = time.Time{}
+	ui.restoredSnapshot = false
+	ui.snapshotFiltered = false
 	ui.mu.Unlock()
 	ui.treeChanged()
 	return nil

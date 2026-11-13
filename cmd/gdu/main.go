@@ -132,6 +132,7 @@ func init() {
 	flags.StringVar(&af.WebConfig.Listen, "web-listen", "",
 		"Address for the web UI to listen on (default: localhost with a random free port)")
 	flags.BoolVar(&af.WebConfig.OpenBrowser, "web-open", true, "Open the web UI in the default browser on start")
+	flags.BoolVar(&af.WebConfig.RecycleOnly, "web-recycle-only", false, "Enable reviewed Windows Recycle Bin cleanup and disable the legacy web delete action")
 
 	initConfig()
 	setDefaults()

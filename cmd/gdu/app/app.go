@@ -131,6 +131,7 @@ type Flags struct {
 
 // WebConfig defines the web UI options that can be set from the config file.
 type WebConfig struct {
+	RecycleOnly bool   `yaml:"recycle-only"`
 	Listen      string `yaml:"listen"`
 	OpenBrowser bool   `yaml:"open-browser"`
 	Browser     string `yaml:"browser"`
@@ -507,6 +508,7 @@ func (a *App) createUI(outputAttributes gfs.JSONAttributes) (UI, error) {
 		if a.Flags.NoDelete {
 			webUI.SetNoDelete()
 		}
+		webUI.SetRecycleOnly(a.Flags.WebConfig.RecycleOnly)
 		if a.Flags.TrashCommand != "" {
 			webUI.SetTrashCommand(a.Flags.TrashCommand)
 		}
