@@ -1,5 +1,7 @@
 # Windows 中文预览版
 
+**简体中文** | [English](WINDOWS-PREVIEW.en.md) · [返回首页](../README.md)
+
 本分支提供源码预览，用于本机磁盘分析与人工核对清理。它不是无人值守清理工具，也不会自动清空回收站。新增回收、扫描选择和扫描记录功能仅在 Windows 本地回环监听的 `--web-recycle-only` 模式下开放。
 
 ## 本次扩展
