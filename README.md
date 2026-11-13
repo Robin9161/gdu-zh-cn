@@ -1,3 +1,26 @@
+# Gdu 网页简体中文版
+
+这是 [dundee/gdu](https://github.com/dundee/gdu) 的非官方汉化分支，基于 [v5.39.0](https://github.com/dundee/gdu/releases/tag/v5.39.0)。原项目由 Daniel Milde 和上游贡献者维护，按 [MIT 许可证](LICENSE.md) 分发。本分支将网页界面的列表、图表、清理分类、状态提示和快捷键帮助译为简体中文。命令行界面和参数沿用上游。
+
+从 [本仓库的 Releases](https://github.com/Robin9161/gdu-zh-cn/releases/latest) 下载 Windows x64 压缩包，解压后在 PowerShell 中启动：
+
+```powershell
+.\gdu-zh-cn-windows-amd64.exe --web --web-open=false --no-delete --web-listen 127.0.0.1:17843 "$env:USERPROFILE\Downloads"
+```
+
+打开终端打印的完整本地地址。也可将地址粘贴到 Codex 的内置浏览器标签页。`--no-delete` 禁用删除。Windows 版沿用上游的删除行为，永久删除会绕过回收站。
+
+从源码构建需要 Node.js 22.12 或更高的受支持版本，以及 Go 1.26 或更新版本。在仓库根目录运行：
+
+```powershell
+npm --prefix webui/frontend ci
+npm --prefix webui/frontend run build
+npm --prefix webui/frontend test
+go build -trimpath -o gdu-zh-cn-windows-amd64.exe ./cmd/gdu
+```
+
+---
+
 # go DiskUsage()
 
 <img src="./gdu.png" alt="Gdu " width="200" align="right">

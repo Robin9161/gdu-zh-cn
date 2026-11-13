@@ -60,7 +60,7 @@ export function computeSlices(
   if (tail.length > 0) {
     slices.push({
       key: '__other__',
-      label: `Other (${tail.length})`,
+      label: `其他（${tail.length} 项）`,
       value: tail.reduce((acc, s) => acc + s.value, 0),
       color: OTHER_COLOR,
     });

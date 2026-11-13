@@ -29,10 +29,10 @@ interface FileTableProps {
 }
 
 const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
-  { key: 'name', label: 'Name', numeric: false },
-  { key: 'size', label: 'Size', numeric: true },
-  { key: 'itemCount', label: 'Items', numeric: true },
-  { key: 'mtime', label: 'Modified', numeric: true },
+  { key: 'name', label: '名称', numeric: false },
+  { key: 'size', label: '大小', numeric: true },
+  { key: 'itemCount', label: '项数', numeric: true },
+  { key: 'mtime', label: '修改时间', numeric: true },
 ];
 
 export function FileTable({
@@ -74,7 +74,7 @@ export function FileTable({
               )}
             </th>
           ))}
-          <th className="actions-col" aria-label="Actions" />
+          <th className="actions-col" aria-label="操作" />
         </tr>
       </thead>
       <tbody>
@@ -100,9 +100,9 @@ export function FileTable({
                 <span className="swatch" style={{ backgroundColor: color }} />
                 <span className="name">
                   {node.isDir ? '📁' : '📄'} {node.name}
-                  {node.flag === '!' && <span className="flag-error" title="Access error"> !</span>}
+                  {node.flag === '!' && <span className="flag-error" title="无法访问"> !</span>}
                   {deletion && (
-                    <span className="muted"> · {deletion === 'pending' ? 'deleting…' : 'deleted'}</span>
+                    <span className="muted"> · {deletion === 'pending' ? '正在删除…' : '已删除'}</span>
                   )}
                 </span>
                 <span className="bar" style={{ width: `${barWidth}%`, backgroundColor: color }} />
@@ -114,8 +114,8 @@ export function FileTable({
                 <button
                   type="button"
                   className="row-action"
-                  aria-label={`Reveal ${node.name}`}
-                  title="Reveal in file manager"
+                  aria-label={`在资源管理器中定位 ${node.name}`}
+                  title="在资源管理器中定位"
                   disabled={actionPending}
                   onClick={() => onReveal(node)}
                 >
@@ -125,8 +125,8 @@ export function FileTable({
                   <button
                     type="button"
                     className="row-action"
-                    aria-label={`Delete ${node.name}`}
-                    title="Delete"
+                    aria-label={`删除 ${node.name}`}
+                    title="删除"
                     disabled={isDeleting}
                     onClick={() => onDelete(node)}
                   >
@@ -140,14 +140,14 @@ export function FileTable({
         {children.length === 0 && (
           <tr>
             <td colSpan={5} className="empty">
-              Empty directory
+              此目录为空
             </td>
           </tr>
         )}
       </tbody>
       <tfoot>
         <tr>
-          <td className="muted">{children.length} items</td>
+          <td className="muted">{formatCount(children.length)} 项</td>
           <td className="num">{formatSize(total, useSIPrefix)}</td>
           <td className="num muted" colSpan={3}>
             {percent(total, total) > 0 ? '100%' : ''}

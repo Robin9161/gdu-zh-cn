@@ -10,9 +10,9 @@ export function ProgressBar({ progress, useSIPrefix }: ProgressBarProps) {
   return (
     <div className="scanning">
       <div className="spinner" />
-      <h2>Scanning…</h2>
+      <h2>正在扫描…</h2>
       <div className="scan-stats">
-        <span>{formatCount(progress.itemCount)} items</span>
+        <span>{formatCount(progress.itemCount)} 项</span>
         <span>{formatSize(progress.totalUsage, useSIPrefix)}</span>
       </div>
       <div className="scan-current" title={progress.currentItem}>

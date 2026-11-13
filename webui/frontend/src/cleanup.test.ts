@@ -74,10 +74,10 @@ describe('ageColor and ageText', () => {
   });
 
   it('describes age coarsely', () => {
-    expect(ageText(now, now)).toBe('changed today');
-    expect(ageText(now - DAY, now)).toBe('unchanged for 1 day');
-    expect(ageText(now - 125 * DAY, now)).toBe('unchanged for 4 months');
-    expect(ageText(now - 800 * DAY, now)).toBe('unchanged for 2 years');
+    expect(ageText(now, now)).toBe('今天修改');
+    expect(ageText(now - DAY, now)).toBe('已 1 天未修改');
+    expect(ageText(now - 125 * DAY, now)).toBe('已 4 个月未修改');
+    expect(ageText(now - 800 * DAY, now)).toBe('已 2 年未修改');
   });
 });
 
@@ -98,7 +98,7 @@ describe('candidateSummary', () => {
       },
     });
     expect(candidateSummary(n, false, false, new Map(labels), now)).toBe(
-      '4.0 KiB ml models, 2.0 KiB build artifacts, +1 more · unchanged for 4 months',
+      '4.0 KiB 机器学习模型、2.0 KiB 构建产物、另有 1 类 · 已 4 个月未修改',
     );
   });
 

@@ -4,6 +4,8 @@ import { metricValue } from '../slices';
 import { formatCount, formatSize, percent } from '../format';
 import { layoutTree, type TreeLayoutRect } from './treemap/treeLayout';
 import { OTHER_COLOR } from '../colors';
+import { displayNodeName } from '../zh-CN';
+import { CATEGORY_NODE_PREFIX } from '../cleanup';
 import { deletionStateOf, type Deletion } from '../model';
 
 export type TileFocus = 'match' | 'contains' | 'none';
@@ -123,7 +125,7 @@ export function TreeMap({
       ref={containerRef}
       className={`treemap ${hoveredNode === null ? '' : 'hovering'}`}
       role="img"
-      aria-label="Directory size treemap"
+      aria-label="目录占用矩形树图"
     >
       <svg
         viewBox={`0 0 ${size.width} ${size.height}`}
@@ -195,7 +197,7 @@ export function TreeMap({
               data-deletion={deletion ?? undefined}
               data-focus={tileFocus ?? undefined}
               role="button"
-              aria-label={`${node.name}, ${formatSize(metricValue(node, apparent), useSIPrefix)}`}
+              aria-label={`${displayNodeName(node)}， ${formatSize(metricValue(node, apparent), useSIPrefix)}`}
               tabIndex={0}
               style={{ cursor: 'pointer' }}
               opacity={opacity}
@@ -260,7 +262,7 @@ export function TreeMap({
                   height={Math.max(rect.h - 2, 0)}
                 >
                   <div className="treemap-label">
-                    <span className="treemap-label-name">{node.name}</span>
+                    <span className="treemap-label-name">{displayNodeName(node)}</span>
                     {showSize && (
                       <span className="treemap-label-size">
                         {formatSize(metricValue(node, apparent), useSIPrefix)}
@@ -275,20 +277,20 @@ export function TreeMap({
       </svg>
       {hoveredNode && (
         <div className="treemap-tooltip">
-          <b>{hoveredNode.name}</b>
-          <span>{hoveredNode.path}</span>
+          <b>{displayNodeName(hoveredNode)}</b>
+          {!hoveredNode.path.startsWith(CATEGORY_NODE_PREFIX) && <span>{hoveredNode.path}</span>}
           <span>
             {formatSize(metricValue(hoveredNode, apparent), useSIPrefix)} ·{' '}
             {percent(metricValue(hoveredNode, apparent), total).toFixed(1)}%
             {hoveredNode.isDir
-              ? ` · ${formatCount(hoveredNode.itemCount)} item${hoveredNode.itemCount === 1 ? '' : 's'}`
+              ? ` · ${formatCount(hoveredNode.itemCount)} 项`
               : ''}
           </span>
           {deletions && deletionStateOf(deletions, hoveredNode.path) && (
             <span className="treemap-tooltip-detail">
               {deletionStateOf(deletions, hoveredNode.path) === 'pending'
-                ? 'Deleting…'
-                : 'Deleted; the view updates when you open another directory'}
+                ? '正在删除…'
+                : '已删除。打开其他目录时会更新视图。'}
             </span>
           )}
           {tooltipDetail?.(hoveredNode) && (

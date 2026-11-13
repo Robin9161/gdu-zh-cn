@@ -135,9 +135,9 @@ describe('TreeMap interaction', () => {
       />,
     );
 
-    expect(screen.getByRole('img', { name: 'Directory size treemap' }).classList.contains('hovering')).toBe(true);
+    expect(screen.getByRole('img', { name: '目录占用矩形树图' }).classList.contains('hovering')).toBe(true);
     expect(screen.getByText('/tmp/root/folder')).toBeTruthy();
-    expect(screen.getByText(/70 B · 70\.0% · 1 item(?!s)/)).toBeTruthy();
+    expect(screen.getByText(/70 B · 70\.0% · 1 项/)).toBeTruthy();
 
     rerender(
       <TreeMap
@@ -153,7 +153,7 @@ describe('TreeMap interaction', () => {
       />,
     );
 
-    expect(screen.getByText(/100 B · 100\.0% · 3 items/)).toBeTruthy();
+    expect(screen.getByText(/100 B · 100\.0% · 3 项/)).toBeTruthy();
 
     rerender(
       <TreeMap

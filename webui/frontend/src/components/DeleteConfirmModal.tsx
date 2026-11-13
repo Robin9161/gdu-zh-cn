@@ -21,8 +21,8 @@ export function DeleteConfirmModal({ actions }: { actions: ItemActions }) {
   }
 
   return (
-    <Modal titleId="delete-title" title="Delete item" onClose={cancelDelete}>
-      <p>Move the selected item to the trash, or delete it permanently right away.</p>
+    <Modal titleId="delete-title" title="删除项目" onClose={cancelDelete}>
+      <p>选择将此项目移入回收站，或立即永久删除。</p>
       <code className="modal-path">{deleteCandidate.path}</code>
       <span className="muted">
         {formatSize(effectiveApparent ? deleteCandidate.size : deleteCandidate.usage, useSIPrefix)}
@@ -33,11 +33,11 @@ export function DeleteConfirmModal({ actions }: { actions: ItemActions }) {
           checked={skipDeleteChoice}
           onChange={(event) => setSkipDeleteChoice(event.target.checked)}
         />
-        Do not ask again this session
+        本次会话不再确认
       </label>
       <div className="modal-actions">
         <button type="button" autoFocus onClick={cancelDelete}>
-          Cancel
+          取消
         </button>
         <button
           type="button"
@@ -49,7 +49,7 @@ export function DeleteConfirmModal({ actions }: { actions: ItemActions }) {
             void performDelete(deleteCandidate, 'trash');
           }}
         >
-          Move to Trash
+          移入回收站
         </button>
         <button
           type="button"
@@ -62,7 +62,7 @@ export function DeleteConfirmModal({ actions }: { actions: ItemActions }) {
             void performDelete(deleteCandidate, 'permanent');
           }}
         >
-          Delete Permanently
+          永久删除
         </button>
       </div>
     </Modal>

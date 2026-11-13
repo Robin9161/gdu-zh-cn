@@ -1,11 +1,12 @@
+import { localizeError } from './zh-CN';
 import type { CategoriesResponse, NodeResponse, SortKey, SortOrder, Status, TreeNode } from './types';
 
 async function responseError(res: Response): Promise<Error & { status: number }> {
-  let message = `request failed: ${res.status}`;
+  let message = `请求失败（HTTP ${res.status}）`;
   try {
     const body = (await res.json()) as { error?: string };
     if (body.error) {
-      message = body.error;
+      message = localizeError(body.error);
     }
   } catch {
     // ignore non-JSON error bodies

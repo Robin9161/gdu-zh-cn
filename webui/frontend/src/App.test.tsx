@@ -94,20 +94,20 @@ describe('chart view', () => {
   it('keeps the donut table and switches to a full treemap with an inverse label', async () => {
     render(<App />);
 
-    const toggle = await screen.findByRole('button', { name: 'Treemap' });
+    const toggle = await screen.findByRole('button', { name: '矩形树图' });
     expect(screen.getByRole('table')).toBeTruthy();
     expect(api.fetchTree).not.toHaveBeenCalled();
 
     fireEvent.click(toggle);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Donut' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: '环形图' })).toBeTruthy());
     await waitFor(() => expect(api.fetchTree).toHaveBeenCalledWith(root, false));
-    expect(screen.getByRole('img', { name: 'Directory size treemap' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: '目录占用矩形树图' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /nested\.bin/ })).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Donut' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Treemap' }));
+    fireEvent.click(screen.getByRole('button', { name: '环形图' }));
+    fireEvent.click(screen.getByRole('button', { name: '矩形树图' }));
     expect(api.fetchTree).toHaveBeenCalledTimes(1);
   });
 });
@@ -121,7 +121,7 @@ describe('action token', () => {
     firstRender.unmount();
 
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyO' });
 
@@ -138,11 +138,11 @@ describe('missing action token', () => {
     window.sessionStorage.clear();
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyO' });
 
-    expect(await screen.findByText(/no action token/i)).toBeTruthy();
+    expect(await screen.findByText(/缺少操作令牌/)).toBeTruthy();
     expect(api.revealNode).not.toHaveBeenCalled();
   });
 });
@@ -153,7 +153,7 @@ describe('treemap actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     const firstRender = render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const file = await screen.findByRole('button', { name: /file\.txt/ });
     fireEvent.click(file);
 
@@ -161,11 +161,11 @@ describe('treemap actions', () => {
     await waitFor(() => expect(api.revealNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token'));
 
     fireEvent.keyDown(window, { code: 'KeyD' });
-    expect(screen.getByRole('dialog', { name: 'Delete item' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '删除项目' })).toBeTruthy();
     expect(screen.getByText(`${root}/file.txt`)).toBeTruthy();
     expect(screen.queryByText('file.txt', { selector: 'strong' })).toBeNull();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Do not ask again this session' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '本次会话不再确认' }));
+    fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
     await waitFor(() =>
       expect(api.deleteNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token', 'permanent'),
     );
@@ -188,28 +188,28 @@ describe('treemap actions', () => {
       'test-token',
       'permanent',
     );
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
 
     firstRender.unmount();
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
 
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(3));
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
   });
 
   it('moves focus between the delete modal buttons with the arrow keys', async () => {
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
 
-    const cancel = screen.getByRole('button', { name: 'Cancel' });
-    const trash = screen.getByRole('button', { name: 'Move to Trash' });
-    const permanent = screen.getByRole('button', { name: 'Delete Permanently' });
+    const cancel = screen.getByRole('button', { name: '取消' });
+    const trash = screen.getByRole('button', { name: '移入回收站' });
+    const permanent = screen.getByRole('button', { name: '永久删除' });
     expect(document.activeElement).toBe(cancel);
 
     fireEvent.keyDown(window, { key: 'ArrowRight' });
@@ -228,42 +228,42 @@ describe('treemap actions', () => {
   it('opens the delete confirmation via the Delete key, same as the D shortcut', async () => {
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
 
     fireEvent.keyDown(window, { key: 'Delete' });
-    expect(screen.getByRole('dialog', { name: 'Delete item' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '删除项目' })).toBeTruthy();
   });
 
   it('does not delete on Backspace, which file managers bind to "go up"', async () => {
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
 
     fireEvent.keyDown(window, { key: 'Backspace' });
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
   });
 
   it('remembers the skip-confirmation choice across a reload', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     const first = render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Do not ask again this session' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '本次会话不再确认' }));
+    fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(1));
 
     first.unmount();
 
     // The reload must not silently start re-prompting.
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
 
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(2));
   });
 
@@ -271,10 +271,10 @@ describe('treemap actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Trash' }));
+    fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
 
     await waitFor(() =>
       expect(api.deleteNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token', 'trash'),
@@ -283,30 +283,30 @@ describe('treemap actions', () => {
 
   it('opens shortcut help with question mark, without treemap-only shortcuts in donut view', async () => {
     render(<App />);
-    await screen.findByRole('button', { name: 'Treemap' });
+    await screen.findByRole('button', { name: '矩形树图' });
 
     fireEvent.keyDown(window, { key: '?' });
 
-    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '键盘快捷键' })).toBeTruthy();
     // Reveal/Delete/Click only work in the treemap view (see TreeMapView),
     // so listing them here would be misleading while looking at the donut.
-    expect(screen.queryByText('Reveal selected item')).toBeNull();
+    expect(screen.queryByText('在资源管理器中定位所选项目')).toBeNull();
   });
 
   it('includes the treemap-only shortcuts in help when viewing the treemap', async () => {
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
-    await screen.findByRole('img', { name: 'Directory size treemap' });
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
+    await screen.findByRole('img', { name: '目录占用矩形树图' });
 
     fireEvent.keyDown(window, { key: '?' });
 
-    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
-    expect(screen.getByText('Reveal selected item')).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '键盘快捷键' })).toBeTruthy();
+    expect(screen.getByText('在资源管理器中定位所选项目')).toBeTruthy();
   });
 
   it('opens a directory only on double-click', async () => {
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const folder = await screen.findByRole('button', { name: /folder/ });
 
     fireEvent.click(folder);
@@ -318,13 +318,13 @@ describe('treemap actions', () => {
     );
     await waitFor(() => expect(api.fetchTree).toHaveBeenLastCalledWith(`${root}/folder`, false));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
     expect(api.deleteNode).not.toHaveBeenCalled();
   });
 
   it('opens the parent directory when double-clicking a nested file', async () => {
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     const nested = await screen.findByRole('button', { name: /nested\.bin/ });
 
     fireEvent.doubleClick(nested);
@@ -338,14 +338,14 @@ describe('treemap actions', () => {
     vi.mocked(api.fetchStatus).mockResolvedValue({ ...status, deleteAllowed: false });
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
 
     fireEvent.keyDown(window, { code: 'KeyO' });
     await waitFor(() => expect(api.revealNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token'));
     fireEvent.keyDown(window, { code: 'KeyD' });
 
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
     expect(api.deleteNode).not.toHaveBeenCalled();
   });
 
@@ -353,11 +353,11 @@ describe('treemap actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
-    await screen.findByRole('img', { name: 'Directory size treemap' });
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
+    await screen.findByRole('img', { name: '目录占用矩形树图' });
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('data-deletion')).toBe(
@@ -379,12 +379,12 @@ describe('treemap actions', () => {
     );
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     fireEvent.click(await screen.findByRole('button', { name: /file\.txt/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
 
-    expect(await screen.findByText('Could not delete file.txt: node not found')).toBeTruthy();
+    expect(await screen.findByText('无法删除 file.txt：找不到此项目')).toBeTruthy();
     expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('data-deletion')).toBeNull();
     expect(api.fetchNode).toHaveBeenCalledTimes(1);
   });
@@ -395,7 +395,7 @@ describe('table actions', () => {
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Reveal folder' }));
+    fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 folder' }));
 
     await waitFor(() =>
       expect(api.revealNode).toHaveBeenCalledWith(`${root}/folder`, 'test-token'),
@@ -418,28 +418,28 @@ describe('table actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file.txt' }));
-    expect(screen.getByRole('dialog', { name: 'Delete item' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
+    expect(screen.getByRole('dialog', { name: '删除项目' })).toBeTruthy();
     expect(screen.getByText(`${root}/file.txt`)).toBeTruthy();
     expect(api.deleteNode).not.toHaveBeenCalled();
     // Opening the dialog from a directory row must not navigate either.
     expect(api.fetchNode).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Trash' }));
+    fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
 
     await waitFor(() =>
       expect(api.deleteNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token', 'trash'),
     );
-    expect(await screen.findByText('· deleted', { exact: false })).toBeTruthy();
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(await screen.findByText('· 已删除', { exact: false })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
   });
 
   it('deletes permanently from the dialog', async () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete folder' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Permanently' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 folder' }));
+    fireEvent.click(screen.getByRole('button', { name: '永久删除' }));
 
     await waitFor(() =>
       expect(api.deleteNode).toHaveBeenCalledWith(`${root}/folder`, 'test-token', 'permanent'),
@@ -450,10 +450,10 @@ describe('table actions', () => {
   it('does not delete when the dialog is cancelled', async () => {
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file.txt' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
     expect(api.deleteNode).not.toHaveBeenCalled();
   });
 
@@ -461,14 +461,14 @@ describe('table actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file.txt' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Do not ask again this session' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Trash' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '本次会话不再确认' }));
+    fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete folder' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 folder' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(2));
     expect(api.deleteNode).toHaveBeenLastCalledWith(`${root}/folder`, 'test-token', 'trash');
   });
@@ -477,16 +477,16 @@ describe('table actions', () => {
     vi.mocked(api.deleteNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
-    await screen.findByRole('img', { name: 'Directory size treemap' });
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
+    await screen.findByRole('img', { name: '目录占用矩形树图' });
     expect(api.fetchTree).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Donut' }));
+    fireEvent.click(screen.getByRole('button', { name: '环形图' }));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file.txt' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Trash' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
     await waitFor(() => expect(api.deleteNode).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('data-deletion')).toBe(
         'deleted',
@@ -499,10 +499,10 @@ describe('table actions', () => {
     vi.mocked(api.deleteNode).mockRejectedValue(new Error('deletion is disabled'));
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file.txt' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Trash' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除 file.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '移入回收站' }));
 
-    expect(await screen.findByText('Could not delete file.txt: deletion is disabled')).toBeTruthy();
+    expect(await screen.findByText('无法删除 file.txt：删除功能已禁用')).toBeTruthy();
   });
 
   it('hides delete but keeps reveal when the backend disables deletion', async () => {
@@ -510,22 +510,22 @@ describe('table actions', () => {
     vi.mocked(api.revealNode).mockResolvedValue(undefined);
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Reveal file.txt' }));
+    fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 file.txt' }));
 
     await waitFor(() =>
       expect(api.revealNode).toHaveBeenCalledWith(`${root}/file.txt`, 'test-token'),
     );
-    expect(screen.queryByRole('button', { name: 'Delete file.txt' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Delete folder' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '删除 file.txt' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '删除 folder' })).toBeNull();
   });
 
   it('explains that actions are unavailable without an action token', async () => {
     window.sessionStorage.clear();
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Reveal file.txt' }));
+    fireEvent.click(await screen.findByRole('button', { name: '在资源管理器中定位 file.txt' }));
 
-    expect(await screen.findByText(/no action token/i)).toBeTruthy();
+    expect(await screen.findByText(/缺少操作令牌/)).toBeTruthy();
     expect(api.revealNode).not.toHaveBeenCalled();
   });
 });
@@ -571,19 +571,19 @@ describe('projections', () => {
 
   async function openTreemap() {
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
-    await screen.findByRole('img', { name: 'Directory size treemap' });
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
+    await screen.findByRole('img', { name: '目录占用矩形树图' });
   }
 
   it('loads category totals for the current directory in the cleanup projection', async () => {
     await openTreemap();
     expect(api.fetchCategories).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Treemap projection' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '树图着色方式' }), {
       target: { value: 'cleanup' },
     });
     await waitFor(() => expect(api.fetchCategories).toHaveBeenCalledWith(root));
-    expect(await screen.findByRole('button', { name: /ML models · 50 B · 50%/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /机器学习模型 · 50 B · 50%/ })).toBeTruthy();
 
     fireEvent.doubleClick(screen.getByRole('button', { name: /folder/ }));
     await waitFor(() => expect(api.fetchCategories).toHaveBeenLastCalledWith(`${root}/folder`));
@@ -595,15 +595,15 @@ describe('projections', () => {
     );
     await openTreemap();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Treemap projection' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '树图着色方式' }), {
       target: { value: 'category' },
     });
     await waitFor(() => expect(api.fetchTree).toHaveBeenLastCalledWith(root, true));
-    const group = await screen.findByRole('button', { name: /^ML models, / });
+    const group = await screen.findByRole('button', { name: /^机器学习模型， / });
 
     fireEvent.click(group);
     fireEvent.keyDown(window, { code: 'KeyD' });
-    expect(screen.queryByRole('dialog', { name: 'Delete item' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: '删除项目' })).toBeNull();
 
     fireEvent.doubleClick(group);
     expect(api.fetchNode).toHaveBeenCalledTimes(1);
@@ -611,7 +611,7 @@ describe('projections', () => {
     // a real candidate inside the group stays actionable
     fireEvent.click(screen.getByRole('button', { name: /nested\.bin/ }));
     fireEvent.keyDown(window, { code: 'KeyD' });
-    expect(await screen.findByRole('dialog', { name: 'Delete item' })).toBeTruthy();
+    expect(await screen.findByRole('dialog', { name: '删除项目' })).toBeTruthy();
   });
 
   it('fades the rest of the map on hover only in the location projection', async () => {
@@ -623,7 +623,7 @@ describe('projections', () => {
     expect(folder.getAttribute('opacity')).toBe('0.42');
     fireEvent.mouseLeave(file);
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Treemap projection' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '树图着色方式' }), {
       target: { value: 'cleanup' },
     });
     fireEvent.mouseEnter(file);
@@ -650,10 +650,10 @@ describe('projections', () => {
     };
     vi.mocked(api.fetchTree).mockResolvedValue(tagged);
     await openTreemap();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Treemap projection' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '树图着色方式' }), {
       target: { value: 'cleanup' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /ML models · 50 B/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /机器学习模型 · 50 B/ }));
 
     const nested = screen.getByRole('button', { name: /nested\.bin/ });
     const folder = screen.getByRole('button', { name: /folder/ });
@@ -679,12 +679,12 @@ describe('projections', () => {
     });
     vi.mocked(api.fetchStatus).mockResolvedValue({ ...status, classifying: true });
     await openTreemap();
-    expect(screen.getByRole('status').textContent).toBe('classifying…');
+    expect(screen.getByRole('status').textContent).toBe('正在分类…');
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Treemap projection' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '树图着色方式' }), {
       target: { value: 'category' },
     });
-    expect(screen.getByText('Classifying…', { selector: '.treemap-loading span' })).toBeTruthy();
+    expect(screen.getByText('正在分类…', { selector: '.treemap-loading span' })).toBeTruthy();
     expect(api.fetchCategories).not.toHaveBeenCalled();
     expect(api.fetchTree).toHaveBeenCalledTimes(1);
 
@@ -697,14 +697,14 @@ describe('projections', () => {
 
   it('cycles projections with P', async () => {
     await openTreemap();
-    const select = screen.getByRole('combobox', { name: 'Treemap projection' }) as HTMLSelectElement;
+    const select = screen.getByRole('combobox', { name: '树图着色方式' }) as HTMLSelectElement;
     expect(select.value).toBe('location');
 
     fireEvent.keyDown(window, { code: 'KeyP' });
     expect(select.value).toBe('cleanup');
     fireEvent.keyDown(window, { code: 'KeyP' });
     expect(select.value).toBe('age');
-    expect(screen.getByText('Last change')).toBeTruthy();
+    expect(screen.getByText('最近修改')).toBeTruthy();
   });
 });
 
@@ -725,8 +725,8 @@ describe('optimistic deletion', () => {
 
   async function openTreemap() {
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Treemap' }));
-    await screen.findByRole('img', { name: 'Directory size treemap' });
+    fireEvent.click(await screen.findByRole('button', { name: '矩形树图' }));
+    await screen.findByRole('img', { name: '目录占用矩形树图' });
   }
 
   function deleteTile(name: RegExp) {
@@ -747,17 +747,17 @@ describe('optimistic deletion', () => {
 
     expect(api.deleteNode).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('aria-busy')).toBe('true');
-    expect(screen.getByRole('status').textContent).toBe('deleting 2…');
+    expect(screen.getByRole('status').textContent).toBe('正在删除 2 项…');
 
     first.resolve();
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('deleting 1…'));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('正在删除 1 项…'));
     expect(api.fetchNode).toHaveBeenCalledTimes(1);
 
     second.resolve();
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
     expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('data-deletion')).toBe('deleted');
     // file.txt (30 B) and nested.bin (50 B)
-    expect(screen.getByText('freed 80 B')).toBeTruthy();
+    expect(screen.getByText('已释放 80 B')).toBeTruthy();
     expect(api.fetchNode).toHaveBeenCalledTimes(1);
     expect(api.fetchTree).toHaveBeenCalledTimes(1);
 
@@ -808,7 +808,7 @@ describe('optimistic deletion', () => {
     expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('aria-busy')).toBe('true');
 
     pending.reject(new Error('permission denied'));
-    expect(await screen.findByText('Could not delete file.txt: permission denied')).toBeTruthy();
+    expect(await screen.findByText('无法删除 file.txt：权限不足')).toBeTruthy();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /file\.txt/ }).getAttribute('aria-busy')).toBeNull(),
     );

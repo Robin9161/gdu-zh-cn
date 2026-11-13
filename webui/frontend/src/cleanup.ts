@@ -3,14 +3,15 @@
 import type { Amount, Category, Node } from './types';
 import { formatSize } from './format';
 import { PALETTE } from './colors';
+import { categoryLabel } from './zh-CN';
 
 export type Projection = 'location' | 'cleanup' | 'age' | 'category';
 
 export const PROJECTIONS: Array<{ id: Projection; label: string }> = [
-  { id: 'location', label: 'Location' },
-  { id: 'cleanup', label: 'Cleanup' },
-  { id: 'age', label: 'Age' },
-  { id: 'category', label: 'By category' },
+  { id: 'location', label: '按目录' },
+  { id: 'cleanup', label: '清理候选' },
+  { id: 'age', label: '按修改时间' },
+  { id: 'category', label: '按类别' },
 ];
 
 // Path prefix of the synthetic category nodes of the tree grouped by category
@@ -90,10 +91,10 @@ export function cleanupColor(node: Node, apparent: boolean): string {
 const DAY = 24 * 60 * 60;
 
 export const AGE_BUCKETS: Array<{ maxDays: number; label: string; color: string }> = [
-  { maxDays: 30, label: '< 1 month', color: NEUTRAL_COLOR },
-  { maxDays: 182, label: '< 6 months', color: '#5b5440' },
-  { maxDays: 365, label: '< 1 year', color: '#9a7330' },
-  { maxDays: Infinity, label: 'older', color: SAFE_COLOR },
+  { maxDays: 30, label: '1 个月内', color: NEUTRAL_COLOR },
+  { maxDays: 182, label: '1–6 个月', color: '#5b5440' },
+  { maxDays: 365, label: '6–12 个月', color: '#9a7330' },
+  { maxDays: Infinity, label: '1 年及以上', color: SAFE_COLOR },
 ];
 
 // ageColor colors by the latest change within the item: the longer nothing
@@ -110,15 +111,15 @@ export function ageColor(mtime: number, now: number): string {
 export function ageText(mtime: number, now: number): string {
   const days = Math.floor((now - mtime) / DAY);
   if (mtime <= 0 || days < 1) {
-    return 'changed today';
+    return '今天修改';
   }
   if (days < 60) {
-    return `unchanged for ${days} day${days === 1 ? '' : 's'}`;
+    return `已 ${days} 天未修改`;
   }
   if (days < 730) {
-    return `unchanged for ${Math.floor(days / 30)} months`;
+    return `已 ${Math.floor(days / 30)} 个月未修改`;
   }
-  return `unchanged for ${Math.floor(days / 365)} years`;
+  return `已 ${Math.floor(days / 365)} 年未修改`;
 }
 
 // candidateSummary is the tooltip line for an item holding candidates, e.g.
@@ -142,11 +143,11 @@ export function candidateSummary(
   }
   const parts = entries
     .slice(0, 2)
-    .map((e) => `${formatSize(e.bytes, useSIPrefix)} ${(labels.get(e.category) ?? e.category).toLowerCase()}`);
+    .map((e) => `${formatSize(e.bytes, useSIPrefix)} ${categoryLabel(e.category, labels.get(e.category))}`);
   if (entries.length > 2) {
-    parts.push(`+${entries.length - 2} more`);
+    parts.push(`另有 ${entries.length - 2} 类`);
   }
-  return `${parts.join(', ')} · ${ageText(node.mtime, now)}`;
+  return `${parts.join('、')} · ${ageText(node.mtime, now)}`;
 }
 
 // containsCategory reports whether a legend filter keeps node highlighted.

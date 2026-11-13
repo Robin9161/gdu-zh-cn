@@ -2,7 +2,7 @@ import { useGduModel } from '../model';
 import { Modal } from './Modal';
 
 export function HelpModal() {
-  const { showHelp, setShowHelp, view } = useGduModel();
+  const { showHelp, setShowHelp, view, status } = useGduModel();
   if (!showHelp) {
     return null;
   }
@@ -10,7 +10,7 @@ export function HelpModal() {
   return (
     <Modal
       titleId="shortcuts-title"
-      title="Keyboard shortcuts"
+      title="键盘快捷键"
       className="shortcuts-modal"
       onClose={() => setShowHelp(false)}
     >
@@ -18,34 +18,37 @@ export function HelpModal() {
         {view === 'treemap' && (
           <>
             <dt>O</dt>
-            <dd>Reveal selected item</dd>
-            <dt>D / Delete</dt>
-            <dd>Delete selected item</dd>
-            <dt>Click</dt>
-            <dd>Select a treemap item</dd>
-            <dt>Double-click</dt>
-            <dd>Open a directory</dd>
+            <dd>在资源管理器中定位所选项目</dd>
+            {status.deleteAllowed && (
+              <>
+                <dt>D / Delete</dt>
+                <dd>删除所选项目</dd>
+              </>
+            )}
+            <dt>单击</dt>
+            <dd>选择树图中的项目</dd>
+            <dt>双击</dt>
+            <dd>进入目录</dd>
             <dt>P</dt>
             <dd>
-              Switch projection: location, cleanup candidates (safe / review first), age of the
-              last change, or candidates grouped by category
+              切换树图着色方式，可按目录、清理候选、修改时间或类别查看
             </dd>
           </>
         )}
         {view === 'donut' && (
           <>
-            <dt>Row buttons</dt>
-            <dd>Reveal or delete an item in the table</dd>
+            <dt>行内按钮</dt>
+            <dd>{status.deleteAllowed ? '定位或删除列表中的项目' : '在资源管理器中定位列表中的项目'}</dd>
           </>
         )}
         <dt>?</dt>
-        <dd>Show this help</dd>
+        <dd>显示快捷键帮助</dd>
         <dt>Esc</dt>
-        <dd>Close a dialog, or show all categories again</dd>
+        <dd>关闭对话框，或清除类别筛选</dd>
       </dl>
       <div className="modal-actions">
         <button type="button" autoFocus onClick={() => setShowHelp(false)}>
-          Close
+          关闭
         </button>
       </div>
     </Modal>

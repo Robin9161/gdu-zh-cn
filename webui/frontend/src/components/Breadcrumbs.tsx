@@ -7,16 +7,19 @@ interface BreadcrumbsProps {
 
 export function Breadcrumbs({ breadcrumbs, onNavigate }: BreadcrumbsProps) {
   return (
-    <nav className="breadcrumbs" aria-label="Path">
+    <nav className="breadcrumbs" aria-label="目录路径">
       {breadcrumbs.map((node, i) => {
         const isLast = i === breadcrumbs.length - 1;
+        const label = i === 0 && node.path === '(multiple)' && node.name === '(multiple)'
+          ? '扫描目录总览'
+          : node.name || node.path;
         return (
           <span key={node.path} className="crumb">
             {isLast ? (
-              <span className="crumb-current">{node.name || node.path}</span>
+              <span className="crumb-current">{label}</span>
             ) : (
               <button type="button" className="crumb-link" onClick={() => onNavigate(node)}>
-                {node.name || node.path}
+                {label}
               </button>
             )}
             {!isLast && <span className="crumb-sep">/</span>}

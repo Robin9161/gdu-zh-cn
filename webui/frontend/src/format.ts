@@ -22,7 +22,7 @@ export function formatSize(bytes: number, useSIPrefix = false): string {
 }
 
 export function formatCount(n: number): string {
-  return n.toLocaleString('en-US');
+  return n.toLocaleString('zh-CN');
 }
 
 export function formatMtime(unixSeconds: number): string {
@@ -30,7 +30,7 @@ export function formatMtime(unixSeconds: number): string {
     return '';
   }
   const d = new Date(unixSeconds * 1000);
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',

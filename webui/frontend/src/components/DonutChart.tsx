@@ -35,12 +35,12 @@ export function DonutChart({
   const centerPrimary = hovered ? hovered.label : formatSize(total, useSIPrefix);
   const centerSecondary = hovered
     ? `${formatSize(hovered.value, useSIPrefix)} · ${percent(hovered.value, total).toFixed(1)}%`
-    : `${slices.length} item${slices.length === 1 ? '' : 's'}`;
+    : `${slices.length} 项`;
 
   let offsetFraction = 0;
 
   return (
-    <div className="donut" role="img" aria-label="Directory size breakdown">
+    <div className="donut" role="img" aria-label="目录占用分布">
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" height="100%">
         <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
           <circle

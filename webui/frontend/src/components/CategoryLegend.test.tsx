@@ -26,10 +26,10 @@ describe('CategoryLegend', () => {
         onFilter={() => undefined}
       />,
     );
-    expect(screen.getByText('Candidates: 5.0 KiB (50%)')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Build artifacts · 2.0 KiB · 20%/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Installers/ })).toBeNull();
-    expect(screen.getByText('safe')).toBeTruthy();
+    expect(screen.getByText('清理候选 5.0 KiB (50%)')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /构建产物 · 2.0 KiB · 20%/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /安装包和压缩文件/ })).toBeNull();
+    expect(screen.getByText('通常可重新生成')).toBeTruthy();
   });
 
   it('toggles the category filter', () => {
@@ -44,7 +44,7 @@ describe('CategoryLegend', () => {
         onFilter={onFilter}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /ML models/ }));
+    fireEvent.click(screen.getByRole('button', { name: /机器学习模型/ }));
     expect(onFilter).toHaveBeenLastCalledWith('ml-model');
 
     rerender(
@@ -57,7 +57,7 @@ describe('CategoryLegend', () => {
         onFilter={onFilter}
       />,
     );
-    const chip = screen.getByRole('button', { name: /ML models/ });
+    const chip = screen.getByRole('button', { name: /机器学习模型/ });
     expect(chip.getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(chip);
     expect(onFilter).toHaveBeenLastCalledWith(null);
@@ -74,7 +74,7 @@ describe('CategoryLegend', () => {
         onFilter={() => undefined}
       />,
     );
-    expect(screen.getByText('No cleanup candidates here')).toBeTruthy();
+    expect(screen.getByText('此目录没有清理候选')).toBeTruthy();
   });
 
   it('explains the age projection and renders nothing for location', () => {
@@ -88,7 +88,7 @@ describe('CategoryLegend', () => {
         onFilter={() => undefined}
       />,
     );
-    expect(screen.getByText('older')).toBeTruthy();
+    expect(screen.getByText('1 年及以上')).toBeTruthy();
 
     rerender(
       <CategoryLegend

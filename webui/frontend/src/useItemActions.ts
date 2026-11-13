@@ -2,13 +2,14 @@ import { useCallback, useState } from 'react';
 import type { Node } from './types';
 import { deleteNode, revealNode, type DeleteMode } from './api';
 import { deletionStateOf, useGduModel } from './model';
+import { localizeError } from './zh-CN';
 
 // Shown instead of firing a request that is certain to come back as a bare
 // 403. The token is missing whenever this tab never received one - the page
 // was opened without the token gdu put in the URL, or session storage is
 // unavailable - and no API call can recover it.
 const noActionTokenMessage =
-  'Actions are unavailable: this page has no action token. Reopen the URL gdu printed, or restart gdu.';
+  '操作暂不可用：此页面缺少操作令牌。请打开 Gdu 启动时显示的完整地址，或重启 Gdu。';
 
 export interface ItemActions {
   // actionPending is true while a reveal runs. Deletions never block: they
@@ -62,7 +63,7 @@ export function useItemActions(): ItemActions {
       try {
         await deleteNode(node.path, actionToken, mode);
       } catch (err: unknown) {
-        error = `Could not delete ${node.name}: ${err instanceof Error ? err.message : String(err)}`;
+        error = `无法删除 ${node.name}：${localizeError(err instanceof Error ? err.message : String(err))}`;
       }
       const errors = settleDeletion(node.path, error);
       if (errors && errors.length > 0) {
@@ -88,7 +89,7 @@ export function useItemActions(): ItemActions {
         await revealNode(node.path, actionToken);
         setLoadError(null);
       } catch (err: unknown) {
-        setLoadError(err instanceof Error ? err.message : String(err));
+        setLoadError(localizeError(err instanceof Error ? err.message : String(err)));
       } finally {
         setActionPending(false);
       }

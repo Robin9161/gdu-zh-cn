@@ -5,6 +5,7 @@ import { deletionStateOf, useGduModel } from '../model';
 import { TreeMap } from './TreeMap';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { useItemActions } from '../useItemActions';
+import { localizeHint } from '../zh-CN';
 import { CategoryLegend } from './CategoryLegend';
 import type { TreeLayoutRect } from './treemap/treeLayout';
 import type { TileFocus } from './TreeMap';
@@ -233,7 +234,7 @@ export function TreeMapView() {
         return null;
       }
       const summary = candidateSummary(node, effectiveApparent, useSIPrefix, labels, now);
-      return [summary, node.hint].filter(Boolean).join(' — ') || null;
+      return [summary, localizeHint(node.hint)].filter(Boolean).join(' — ') || null;
     };
   }, [projection, effectiveApparent, useSIPrefix, labels, now]);
 
@@ -289,7 +290,7 @@ export function TreeMapView() {
           <div className="treemap-loading">
             {treeLoading && <span className="spinner compact" />}
             <span>
-              {treeError ? 'Treemap unavailable' : byCategory && classifying ? 'Classifying…' : 'Loading treemap…'}
+              {treeError ? '无法加载矩形树图' : byCategory && classifying ? '正在分类…' : '正在加载矩形树图…'}
             </span>
           </div>
         )}

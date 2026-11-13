@@ -1,5 +1,6 @@
 import type { CategoriesResponse, Category } from '../types';
 import { formatSize, percent } from '../format';
+import { categoryLabel } from '../zh-CN';
 import {
   AGE_BUCKETS,
   CATEGORY_COLORS,
@@ -38,8 +39,8 @@ export function CategoryLegend({
   }
   if (projection === 'age') {
     return (
-      <div className="legend" aria-label="Age legend">
-        <span className="legend-title">Last change</span>
+      <div className="legend" aria-label="修改时间图例">
+        <span className="legend-title">最近修改</span>
         {AGE_BUCKETS.map((b) => (
           <span key={b.label} className="legend-key">
             <Swatch color={b.color} />
@@ -50,7 +51,7 @@ export function CategoryLegend({
     );
   }
   if (!categories) {
-    return <div className="legend legend-loading">Classifying…</div>;
+    return <div className="legend legend-loading">正在分类…</div>;
   }
 
   const total = amountValue(categories.total, apparent);
@@ -60,47 +61,48 @@ export function CategoryLegend({
   const reclaimable = present.reduce((sum, c) => sum + c.bytes, 0);
 
   return (
-    <div className="legend" aria-label="Cleanup legend">
+    <div className="legend" aria-label="清理候选图例">
       {present.length === 0 ? (
-        <span className="legend-title">No cleanup candidates here</span>
+        <span className="legend-title">此目录没有清理候选</span>
       ) : (
         <span className="legend-title">
-          Candidates: {formatSize(reclaimable, useSIPrefix)} ({percent(reclaimable, total).toFixed(0)}%)
+          清理候选 {formatSize(reclaimable, useSIPrefix)} ({percent(reclaimable, total).toFixed(0)}%)
         </span>
       )}
       {projection === 'cleanup' && present.length > 0 && (
         <>
           <span className="legend-key">
             <Swatch color={SAFE_COLOR} />
-            safe
+            通常可重新生成
           </span>
           <span className="legend-key">
             <Swatch color={REVIEW_COLOR} />
-            review first
+            需先核查
           </span>
         </>
       )}
       {present.map((c) => {
         const active = filter === c.id;
         const color = CATEGORY_COLORS[c.id];
+        const label = categoryLabel(c.id, c.label);
         return (
           <button
             key={c.id}
             type="button"
             className={`legend-chip ${active ? 'active' : ''}`}
             aria-pressed={active}
-            title={active ? 'Show all categories (Esc)' : `Highlight ${c.label.toLowerCase()}`}
+            title={active ? '显示所有类别（Esc）' : `突出显示${label}`}
             style={active ? { borderColor: color, boxShadow: `inset 0 0 0 1px ${color}` } : undefined}
             onClick={() => onFilter(active ? null : c.id)}
           >
             <Swatch color={color} />
-            {c.label} · {formatSize(c.bytes, useSIPrefix)} · {percent(c.bytes, total).toFixed(0)}%
+            {label} · {formatSize(c.bytes, useSIPrefix)} · {percent(c.bytes, total).toFixed(0)}%
           </button>
         );
       })}
       {filter && (
         <button type="button" className="legend-clear" onClick={() => onFilter(null)}>
-          Show all
+          显示全部
         </button>
       )}
     </div>
